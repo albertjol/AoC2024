@@ -1,0 +1,68 @@
+object FrmAdvCode: TFrmAdvCode
+  Left = 350
+  Height = 163
+  Top = 250
+  Width = 526
+  Caption = 'Advent of code'
+  ClientHeight = 163
+  ClientWidth = 526
+  OnCreate = FormCreate
+  LCLVersion = '3.4.0.0'
+  object ed_Filename: TFileNameEdit
+    Left = 136
+    Height = 25
+    Top = 16
+    Width = 376
+    Filter = 'Text files|*.txt'
+    FilterIndex = 0
+    HideDirectories = False
+    ButtonWidth = 23
+    NumGlyphs = 1
+    MaxLength = 0
+    TabOrder = 0
+  end
+  object lbl_Filename: TLabel
+    Left = 10
+    Height = 17
+    Top = 24
+    Width = 80
+    Caption = 'Input filepath:'
+  end
+  object btn_Start: TButton
+    Left = 437
+    Height = 25
+    Top = 54
+    Width = 75
+    Caption = 'Start'
+    TabOrder = 1
+    OnClick = btn_StartClick
+  end
+  object ed_Answer1: TEdit
+    Left = 88
+    Height = 25
+    Top = 96
+    Width = 424
+    TabOrder = 2
+  end
+  object lbl_Answer1: TLabel
+    Left = 8
+    Height = 17
+    Top = 104
+    Width = 56
+    Caption = 'Answer 1:'
+  end
+  object ed_Answer2: TEdit
+    Left = 88
+    Height = 25
+    Top = 124
+    Width = 424
+    TabOrder = 3
+  end
+  object lbl_Answer2: TLabel
+    Left = 8
+    Height = 17
+    Top = 132
+    Width = 56
+    Caption = 'Answer 2:'
+  end
+end
