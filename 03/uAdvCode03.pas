@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, EditBtn, StdCtrls
-  , Generics.Collections
+  , uregexpr
   ;
 
 type
@@ -86,13 +86,54 @@ begin
 end;
 
 procedure TFrmAdvCode.part1(lines: TStringList);
+var
+  re: TRegExpr;
+  a,b: Integer;
+  sum: Integer = 0;
 begin
-  ed_Answer1.Text := IntToStr(999);
+  re := TRegExpr.Create('mul\((\d+),(\d+)\)');
+  re.Exec(lines[0]);
+  a := StrToInt(re.Match[1]);
+  b := StrToInt(re.Match[2]);
+  Inc(sum,a*b);
+  while re.ExecNext() do
+  begin
+    a := StrToInt(re.Match[1]);
+    b := StrToInt(re.Match[2]);
+    Inc(sum,a*b);
+  end;
+  FreeAndNil(re);
+
+  ed_Answer1.Text := IntToStr(sum);
 end;
 
 procedure TFrmAdvCode.part2(lines: TStringList);
+var
+  re: TRegExpr;
+  a,b: Integer;
+  filteredString: String = '';
+  sum: Integer = 0;
 begin
-  ed_Answer2.Text := IntToStr(999);
+  // Greedy regex:
+  re := TRegExpr.Create('don''t\(\).*?do\(\)');
+  filteredString := re.Replace(lines[0], '');
+  FreeAndNil(re);
+
+  // Below is same as part 1...
+  re := TRegExpr.Create('mul\((\d+),(\d+)\)');
+  re.Exec(filteredString);
+  a := StrToInt(re.Match[1]);
+  b := StrToInt(re.Match[2]);
+  Inc(sum,a*b);
+  while re.ExecNext() do
+  begin
+    a := StrToInt(re.Match[1]);
+    b := StrToInt(re.Match[2]);
+    Inc(sum,a*b);
+  end;
+  FreeAndNil(re);
+
+  ed_Answer2.Text := IntToStr(sum);
 end;
 
 end.
