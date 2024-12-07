@@ -36,8 +36,8 @@ type
 
   end;
 
-  eState = (MovingNorth, MovingEast, MovingSouth, MovingWest);
-
+  eState = (MovingNorth, MovingEast, MovingSouth, MovingWest, Untouched);
+  TStateList = TList<eState>;
 
 var
   FrmAdvCode: TFrmAdvCode;
@@ -214,8 +214,135 @@ begin
 end;
 
 procedure TFrmAdvCode.part2(lines: TStringList);
+var
+  pt: TPoint;
+  state : eState;
+  gone: Boolean = False;
+  count : Integer = 0;
+  track: TObjectList<TStateList>;
+  obstacle : TPoint;
+
+  function findGuard(): TPoint;
+  var
+    y, x: Integer;
+    c: char;
+  begin
+    for y := 0 to lines.Count - 1 do
+    begin
+      for x := 1 to lines[y].Length do
+      begin
+        c := lines[y][x];
+        if (c = '^') or (c = 'v') or (c = 'V') or (c = '<') or (c = '>') then
+        begin
+          Result.X := x;
+          Result.Y := y;
+          case c of
+            '^'        : state := MovingNorth;
+            '>'        : state := MovingEast;
+            'V', 'v'   : state := MovingSouth;
+            '<'        : state := MovingWest;
+          end;
+          track[y][x] := state;
+        end
+      end;
+    end;
+  end;
+
+  function isGone(point: TPoint): Boolean;
+  begin
+    Result := (
+       (1 > point.X) or (point.X > lines[0].Length) or
+       (0 > point.Y) or (point.Y >= lines.Count));
+  end;
+
+  function isNextObstacle(): Boolean;
+  var
+    nextPt : TPoint;
+  begin
+    nextPt := pt;
+    case state of
+      MovingNorth: Dec(nextPt.Y);
+      MovingEast:  Inc(nextPt.X);
+      MovingSouth: Inc(nextPt.Y);
+      MovingWest:  Dec(nextPt.X);
+    end;
+    Result := ((not isGone(nextPt)) and ((lines[nextPt.Y][nextPt.X] = '#')) or (nextPt = obstacle));
+  end;
+
+  procedure changeDirection();
+  begin
+    case state of
+      MovingNorth: state := MovingEast;
+      MovingEast:  state := MovingSouth;
+      MovingSouth: state := MovingWest;
+      MovingWest:  state := MovingNorth;
+    end;
+  end;
+
+  function createTrack: TObjectList<TStateList>;
+  var
+    x,y: Integer;
+  begin
+    Result := TObjectList<TStateList>.Create();
+    for y := 0 to lines.Count - 1 do
+    begin
+      Result.Add(TStateList.Create);
+      for x := 0 to lines[y].Length do
+        Result[y].Add(Untouched);
+    end;
+  end;
+var
+  y,x: Integer;
 begin
-  ed_Answer2.Text := IntToStr(999);
+  for y := 0 to lines.Count - 1 do
+  begin
+    for x := 1 to lines[y].Length do
+    begin
+      obstacle := Point(x,y);
+      track := createTrack();
+      try
+        pt := findGuard();
+        if(obstacle = pt) then
+          // cannot be at starting position.
+          continue;
+        gone := False;
+        while not gone do
+        begin
+          if isNextObstacle() then
+          begin
+            changeDirection();
+            // If there is an obstacle right next to it, change again (so turn around)
+            if isNextObstacle() then
+               changeDirection();
+          end;
+          case state of
+            MovingNorth: Dec(pt.Y);
+            MovingEast:  Inc(pt.X);
+            MovingSouth: Inc(pt.Y);
+            MovingWest:  Dec(pt.X);
+          end;
+          if isGone(pt) then
+            gone := True
+          else
+          begin
+            if (track[pt.Y][pt.X] <> Untouched) and (track[pt.Y][pt.X] = state) then
+            begin
+              // We're in a loop, cool.
+              Inc(count);
+              break;
+            end;
+
+            track[pt.Y][pt.X] := state;
+          end;
+        end;
+        // So we are gone. this doesnt work. Continue to the next one
+      finally
+        FreeAndNil(track);
+      end;
+    end;
+  end;
+
+  ed_Answer2.Text := IntToStr(count);
 end;
 
 end.
