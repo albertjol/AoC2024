@@ -21,17 +21,20 @@ type
     ed_Answer1: TEdit;
     ed_Answer2: TEdit;
     ed_Filename: TFileNameEdit;
+    lbl_duration1: TLabel;
+    lbl_duration2: TLabel;
     lbl_Answer2: TLabel;
     lbl_Filename: TLabel;
     lbl_Answer1: TLabel;
 
     procedure btn_StartClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure part1(lines: TStringList);
     procedure part2(lines: TStringList);
 
   private
-
+    FTrackpoints: TList<TPoint>;
   public
 
   end;
@@ -49,8 +52,24 @@ implementation
 { TFrmAdvCode }
 
 procedure TFrmAdvCode.btn_StartClick(Sender: TObject);
+
+  function FormatSeparated(number: QWord): String;
+  var
+    i, j: SizeInt;
+  begin
+    Result := IntToStr(number);
+    j := 0;
+    for i := Result.Length downto 1 do
+    begin
+      if (j > 0) and ((j mod 3) = 0) then
+        Result.Insert(i, ' ');
+      Inc(j);
+    end;
+  end;
+
 var
   lines: TStringList;
+  ms: QWord;
 begin
   with TStringList.Create() do
   begin
@@ -64,8 +83,13 @@ begin
   lines := TStringList.Create();
   try
     lines.LoadFromFile(ed_Filename.Text);
+    ms := GetTickCount64();
     part1(lines);
+    lbl_duration1.Caption := 'Duration of part 1 (ms): ' + FormatSeparated(GetTickCount64() - ms);
+    Application.ProcessMessages();
+    ms := GetTickCount64();
     part2(lines);
+    lbl_duration2.Caption := 'Duration of part 2 (ms): ' + FormatSeparated(GetTickCount64() - ms);
   finally
     FreeAndNil(lines);
   end;
@@ -88,6 +112,13 @@ begin
       end;
     end;
   end;
+
+  FTrackpoints := TList<TPoint>.Create();
+end;
+
+procedure TFrmAdvCode.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(FTrackpoints);
 end;
 
 procedure TFrmAdvCode.part1(lines: TStringList);
@@ -103,6 +134,7 @@ var
     y, x: Integer;
     c: char;
   begin
+    Result := Point(-1,-1);
     for y := 0 to lines.Count - 1 do
     begin
       for x := 1 to lines[y].Length do
@@ -160,10 +192,12 @@ var
     y, x: Integer;
   begin
     Result := 0;
+    FTrackpoints.Clear();
     for y := 0 to track.Count - 1 do
     begin
       for x := 0 to track[y].Count - 1 do
       begin
+        FTrackpoints.Add(Point(x,y));
         Inc(Result, track[y][x]);
       end;
     end;
@@ -227,6 +261,7 @@ var
     y, x: Integer;
     c: char;
   begin
+    Result := Point(-1,-1);
     for y := 0 to lines.Count - 1 do
     begin
       for x := 1 to lines[y].Length do
@@ -291,54 +326,52 @@ var
         Result[y].Add(Untouched);
     end;
   end;
-var
-  y,x: Integer;
 begin
-  for y := 0 to lines.Count - 1 do
+  // 1909. Was 12 seconds in release, 73 seconds in debug mode
+  // Looping through trackpoints instead of every x/y does not change anything
+  // It takes exactly as long... And this is funny as you expect that you have 3
+  // times less points to check (5161 vs 17030)
+  for obstacle in FTrackpoints do
   begin
-    for x := 1 to lines[y].Length do
-    begin
-      obstacle := Point(x,y);
-      track := createTrack();
-      try
-        pt := findGuard();
-        if(obstacle = pt) then
-          // cannot be at starting position.
-          continue;
-        gone := False;
-        while not gone do
+    track := createTrack();
+    try
+      pt := findGuard();
+      if(obstacle = pt) then
+        // cannot be at starting position.
+        continue;
+      gone := False;
+      while not gone do
+      begin
+        if isNextObstacle() then
         begin
+          changeDirection();
+          // If there is an obstacle right next to it, change again (so turn around)
           if isNextObstacle() then
-          begin
-            changeDirection();
-            // If there is an obstacle right next to it, change again (so turn around)
-            if isNextObstacle() then
-               changeDirection();
-          end;
-          case state of
-            MovingNorth: Dec(pt.Y);
-            MovingEast:  Inc(pt.X);
-            MovingSouth: Inc(pt.Y);
-            MovingWest:  Dec(pt.X);
-          end;
-          if isGone(pt) then
-            gone := True
-          else
-          begin
-            if (track[pt.Y][pt.X] <> Untouched) and (track[pt.Y][pt.X] = state) then
-            begin
-              // We're in a loop, cool.
-              Inc(count);
-              break;
-            end;
-
-            track[pt.Y][pt.X] := state;
-          end;
+             changeDirection();
         end;
-        // So we are gone. this doesnt work. Continue to the next one
-      finally
-        FreeAndNil(track);
+        case state of
+          MovingNorth: Dec(pt.Y);
+          MovingEast:  Inc(pt.X);
+          MovingSouth: Inc(pt.Y);
+          MovingWest:  Dec(pt.X);
+        end;
+        if isGone(pt) then
+          gone := True
+        else
+        begin
+          if (track[pt.Y][pt.X] = state) then
+          begin
+            // We're in a loop, cool.
+            Inc(count);
+            break;
+          end;
+
+          track[pt.Y][pt.X] := state;
+        end;
       end;
+      // So we are gone. this doesnt work. Continue to the next one
+    finally
+      FreeAndNil(track);
     end;
   end;
 
