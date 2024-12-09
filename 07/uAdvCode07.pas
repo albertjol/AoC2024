@@ -39,6 +39,9 @@ var
 
 implementation
 
+uses
+  Math;
+
 {$R *.lfm}
 
 { TFrmAdvCode }
@@ -137,9 +140,54 @@ end;
 
 procedure TFrmAdvCode.part2(lines: TStringList);
 var
-  count: Integer = 0;
+  sum: QWord = 0;
+  res: QWord;
+  tryResult: QWord;
+  terms: TList<QWord>;
+  nrCombi: integer;
+  i,j, choice: Integer;
+  term: String;
+  split: TStringArray;
+  line: String;
 begin
-  ed_Answer2.Text := IntToStr(count);
+  terms := TList<QWord>.Create();
+  try
+  for line in lines do
+  begin
+    terms.Clear();
+    split := line.Split(':');
+    res := StrToInt64(split[0]);
+    split := TrimLeft(split[1]).Split(' ');
+    for term in split do
+      terms.Add(StrToInt64(term));
+
+    nrCombi := Floor(IntPower(3, terms.Count));
+    for i := 0 to nrCombi do
+    begin
+      tryResult := terms[0];
+      for j := 1 to terms.Count - 1 do
+      begin
+        choice := ((i div Floor(IntPower(3, j-1))) mod 3);
+        case choice of
+          0: tryResult := tryResult + terms[j];
+          1: tryResult := tryResult * terms[j];
+          2: tryResult := StrToInt64(IntToStr(tryResult) + IntToStr(terms[j]));
+        end;
+      end;
+
+      if tryResult = res then
+      begin
+        Inc(sum, res);
+        break;
+      end;
+
+    end;
+
+  end;
+  finally
+    FreeAndNil(terms);
+  end;
+  ed_Answer2.Text := IntToStr(sum);
 end;
 
 end.
