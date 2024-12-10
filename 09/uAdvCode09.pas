@@ -45,9 +45,6 @@ var
 
 implementation
 
-uses
-  Math;
-
 {$R *.lfm}
 
 { TFrmAdvCode }
@@ -215,11 +212,21 @@ procedure TFrmAdvCode.part2(lines: TStringList);
   end;
 
   procedure DefragmentDisk(diskmap: TList<TFile>);
+    procedure IncSize(diskmap: TList<TFile>; index: Integer; count: Integer);
+    var
+      tmp: TFile;
+    begin
+      // WHY?????
+      tmp := diskmap[index];
+      tmp.Size := tmp.Size + count;
+      diskmap[index] := tmp;
+    end;
+
   var
     indexGap: Integer = 0;
     indexFile: Integer;
     emptyRecord: TFile;
-    tmp: TFile;
+
   begin
     emptyRecord.Id := -1;
     emptyRecord.Size := 0;
@@ -228,25 +235,27 @@ procedure TFrmAdvCode.part2(lines: TStringList);
     while indexFile >= 0 do
     begin
       indexGap := 1;
-      while indexGap < diskmap.Count do
+      while indexGap < indexFile do
       begin
         if diskmap[indexGap].Size >= diskmap[indexFile].Size then
         begin
           //it fits!
 
-          tmp := diskmap[indexGap];
-          tmp.Size := tmp.Size - diskmap[indexFile].Size;
-          diskmap[indexGap] := tmp;
-          // WHY?????
-
+          IncSize(diskmap, indexGap, -diskmap[indexFile].Size);
+          if indexFile = (diskmap.Count - 1) then
+            IncSize(diskmap, indexFile - 1, diskmap[indexFile].Size)
+          else
+          begin
+            IncSize(diskmap, indexFile - 1, diskmap[indexFile].Size + diskmap[indexFile+1].Size);
+            diskmap.Delete(indexFile+1)
+          end;
           // This is supposed to work like a stack
           diskmap.Insert(indexGap, diskmap[indexFile]);
           diskmap.Insert(indexGap, emptyRecord);
-          diskmap[indexFile+2] := emptyRecord;
+          diskmap.Delete(indexFile+2);
 
           // Twice increment..:
           Inc(indexFile, 2);
-
           break;
         end;
         // Twice increment:
@@ -264,9 +273,8 @@ procedure TFrmAdvCode.part2(lines: TStringList);
     Result := 0;
     for i := 0 to diskmap.Count - 1 do
     begin
-      if diskmap[i] < 0 then
-        break;
-      Inc(Result, i * diskmap[i]);
+      if diskmap[i] > 0 then
+        Inc(Result, i * diskmap[i]);
     end;
   end;
 
