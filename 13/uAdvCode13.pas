@@ -230,7 +230,6 @@ var
   i, j, k, l, m, n: Int64;
   a, b: double;
   split: TStringArray;
-  iter: Integer;
 begin
   i:=0;j:=0;k:=0;l:=0;m:=0;n:=0;
 
@@ -256,28 +255,13 @@ begin
     a = (j - ib) / m
   }
 
-  for iter := 0 to lines.Count do
+  for line in lines do
   begin
-    // Hack to simulate a empty line in the input which the LoadFromFile function
-    // does not read because there is no LF character in the last line...
-    // This took me one day finding it
-    if iter < lines.Count then
-      line := lines[iter];
+    // Skip empty lines
+    if line = '' then continue;
+
     split := line.Split([':', ',', '+', '=', ' ']);
-
-    if (iter = lines.Count) or (split[0] = '') then
-    begin
-      // calculate
-      if (m/i) = (n/k) then
-        MessageDlg('Lines are parallel. solution is invalid', TMsgDlgType.mtError, [TMsgDlgBtn.mbOK], 0, mbOk);
-
-      b := (l-j*n/m) / (-i*n/m+k);
-      a := (j - (i * b)) / m;
-      if (a >= 0) and (b >= 0) and IsInteger(a) and IsInteger(b) then
-        count += Round(b + (3 * a));
-
-    end
-    else if split[1] = 'A' then
+    if split[1] = 'A' then
     begin
       m := StrToInt(split[4]);
       n := StrToInt(split[7]);
@@ -291,6 +275,15 @@ begin
     begin
       j := StrToInt(split[3]) + 10000000000000;
       l := StrToInt(split[6]) + 10000000000000;
+
+      // now we can calculate
+      if (m/i) = (n/k) then
+        MessageDlg('Lines are parallel. solution is invalid', TMsgDlgType.mtError, [TMsgDlgBtn.mbOK], 0, mbOk);
+
+      b := (l-j*n/m) / (-i*n/m+k);
+      a := (j - (i * b)) / m;
+      if (a >= 0) and (b >= 0) and IsInteger(a) and IsInteger(b) then
+        count += Round(b + (3 * a));
     end;
 
     {
