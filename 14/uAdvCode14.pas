@@ -30,11 +30,6 @@ type
     procedure FormCreate(Sender: TObject);
     procedure part1(lines: TStringList);
     procedure part2(lines: TStringList);
-
-  private
-
-  public
-
   end;
 
 var
@@ -110,21 +105,6 @@ begin
 end;
 
 procedure TFrmAdvCode.part1(lines: TStringList);
-
-  procedure PrintGrid(grid: TGrid);
-  var
-    x,y: Integer;
-  begin
-    for y := 0 to Length(grid) - 1 do
-    begin
-      for x := 0 to Length(grid[y]) - 1 do
-        Write(grid[y,x].Count);
-      WriteLn();
-    end;
-
-
-  end;
-
 var
   h,w : Integer;
   x,y,vx,vy,xn,yn : Integer;
@@ -176,10 +156,6 @@ begin
           if yn < 0 then yn += h;
           newGrid[yn,xn].Add(r);
         end;
-    //PrintGrid(grid);
-    //WriteLn();
-    //PrintGrid(newGrid);
-    //WriteLn();
 
     //q1
     count := 0;
@@ -222,10 +198,104 @@ begin
 end;
 
 procedure TFrmAdvCode.part2(lines: TStringList);
+const
+  h = 103;
+  w = 101;
+
+  procedure PrintGrid(grid: TGrid);
+  var
+    x,y: Integer;
+  begin
+    // Printing requires you have stdout open: so: you have a terminal attached
+    // to this app. Otherwise just dont print. the answer will be calculated as well
+    for y := 0 to Length(grid) - 1 do
+    begin
+      for x := 0 to Length(grid[y]) - 1 do
+        if(grid[y,x].Count) > 0 then
+          Write('#')
+        else
+        Write(' ');
+      WriteLn();
+    end;
+  end;
+
 var
+  x,y,vx,vy,xn,yn : Integer;
+  r: TPoint;
   count: Integer = 0;
+  line: String;
+  grid, newGrid: TGrid;
+  split: TStringArray;
+  xmasTree: Boolean = False;
+
+label
+  next;
 begin
-  ed_Answer2.Text := IntToStr(count);
+  SetLength(grid, h, w);
+  SetLength(newGrid, h, w);
+  for y := 0 to Length(grid) - 1 do
+    for x := 0 to Length(grid[y]) - 1 do
+    begin
+      grid[y,x] := TList<TPoint>.Create();
+      newGrid[y,x] := TList<TPoint>.Create();
+    end;
+  try
+    for line in lines do
+    begin
+      split := line.Split(['=',',',' ']);
+      // 1, 2, 4, 5 -> x, y, vx, vy
+      x := StrToInt(split[1]);
+      y := StrToInt(split[2]);
+      vx := StrToInt(split[4]);
+      vy := StrToInt(split[5]);
+      grid[y,x].Add(Point(vx,vy));
+    end;
+
+    while not xmasTree do
+    begin
+      next:
+      Inc(count);
+      for y := 0 to Length(grid) - 1 do
+        for x := 0 to Length(grid[y]) - 1 do
+          newGrid[y,x].Clear();
+
+      for y := 0 to Length(grid) - 1 do
+        for x := 0 to Length(grid[y]) - 1 do
+          for r in grid[y,x] do
+          begin
+            xn := (x + count*r.X) mod w;
+            yn := (y + count*r.Y) mod h;
+            // workaround for mod returning negative values:
+            if xn < 0 then xn += w;
+            if yn < 0 then yn += h;
+
+            // Okay. So. The creator of this puzzle has probably started with an
+            // arrangement of robots in an xmas tree formation. I think there are
+            // no overlapping robots in this arrangement... so look for a non
+            // overlapping arrangement...
+            if newGrid[yn,xn].Count > 0 then
+              // break out of 2 loops, continue with the third.
+              // In this case, imo, goto is perfectly fine...
+              // Of course, i could have made a separate function of the double
+              // for loop, and then exit that function, but what is the difference?
+              goto next;
+
+            newGrid[yn,xn].Add(r);
+          end;
+
+      PrintGrid(newGrid);
+      xmasTree := True;
+    end;
+    ed_Answer2.Text := IntToStr(count);
+
+  finally
+    for y := 0 to Length(grid) - 1 do
+      for x := 0 to Length(grid[y]) - 1 do
+      begin
+        grid[y,x].Free;
+        newGrid[y,x].Free;
+      end;
+  end;
 end;
 
 end.
